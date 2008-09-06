@@ -1,0 +1,47 @@
+# Uncomment this if you reference any of your controllers in activate
+# require_dependency 'application'
+
+%w[ pathname validatable ].each {|l| require l }
+
+class FileBrowserExtension < Radiant::Extension
+  version "0.1"
+  description "Simple Extension to list the contents of a server-side directory inside Radiant and upload files to it."
+  url "http://trike.com.au"
+  
+  define_routes do |map|
+    # map.connect 'admin/store/:action', :controller => 'store'
+    # Product Routes
+    map.with_options(:controller => 'admin/file') do |admin|
+      admin.files        'admin/files',              :action => 'index'
+      admin.new_file     'admin/files/new',          :action => 'new'
+      admin.child_files  'admin/files/children',     :action => 'children',
+                                                     :conditions => {:method => :post}
+      admin.edit_files   'admin/files/edit',         :action => 'edit'
+      admin.remove_file  'admin/files/remove',       :action => 'remove' 
+      admin.edit_file_name 'admin/files/edit_file_name', :action => "edit_file_name",
+                                                         :conditions => {:method => :post}
+    end
+    
+  end
+
+  def activate
+    admin.tabs.add("Assets", "/admin/files", :after => "Layouts", :visibility => [:all])
+  end
+  
+  def deactivate
+    admin.tabs.remove("Assets")
+  end
+  
+  def self.asset_parent_path
+    File.join("#{RAILS_ROOT}", 'public')
+  end
+  # Returns the absolute filesystem path to the asset directory as a string
+  def self.asset_path
+    unless ENV["RAILS_ENV"] == 'test'
+       File.join(asset_parent_path, 'assets')
+    else
+       File.join(File.dirname(__FILE__), 'spec/fixtures/assets_test')
+    end
+  end
+  
+end

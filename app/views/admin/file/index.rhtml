@@ -1,0 +1,58 @@
+<%= javascript_include_tag "admin/sitemap" -%>
+
+<h1>Assets</h1>
+
+<table id="site-map" class="index" summary="List of Files">
+  <thead>
+    <tr>
+      <th class="page">File</th>
+      <th class="type">Type</th>
+      <th class="size">Size</th>
+      <th class="embed">Embed</th>
+      <th class="modify" colspan="2">Modify</th>
+    </tr>
+  </thead>
+  <tbody>
+<% if @root_asset -%>
+  <%= render_children @root_asset -%>
+<% else -%>
+  <tr>
+    <td colspan="6" class="note">No Files</td>
+  </tr>
+<% end -%>
+  </tbody>
+</table>
+
+<script>
+	
+var auth_token = '<%=form_authenticity_token-%>';
+var asset_lock = '<%=@root_asset.lock-%>';
+	
+//over-riding the sitemap.js -> getBranch and saveExpandedCookie methods
+SiteMap.addMethods ({
+        saveExpandedCookie: function() {
+           document.cookie = "expanded_rows=" + encodeURIComponent(this.expandedRows.uniq().join(",")) + "; path=/admin; ";
+           document.cookie = "version=" + asset_lock + "; path=/admin; "; 
+        },
+	getBranch: function(row) {
+	
+	    var id = this.extractPageId(row), level = ( this.extractLevel(row) + 1 ),
+	        spinner = $('busy-' + id);
+	
+		new Ajax.Updater(
+	      row,
+	      '../admin/files/children?indent_level=' + level,
+	      {
+			method: "post",		  	
+		  	parameters: { id: id, authenticity_token: auth_token, asset_lock: asset_lock },	
+	        insertion: "after",
+	        onLoading:  function() { spinner.show(); this.updating = true  }.bind(this),
+	        onComplete: function() { spinner.fade(); this.updating = false; new fileNameTable("site-map"); }.bind(this)
+	      }
+	    );
+	  }	
+});	
+
+
+</script>
+<%= javascript_include_tag "application" -%>
